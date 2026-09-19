@@ -1,0 +1,18 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+
+# WhatsApp persistent session data (local auth files)
+sessions/*
+!sessions/.gitkeep
+.wwebjs_cache/
+.wwebjs_auth/
+
+# Logs
+*.log
+bridge.log
+bridge-err.log
+
+# OS
+.DS_Store
+Thumbs.db

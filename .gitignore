@@ -1,0 +1,61 @@
+# Separate Git repository for Frontend
+frontend/
+
+# Python Virtual Environments
+venv/
+.venv/
+backend/venv/
+backend/.venv/
+env/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+backend/__pycache__/
+backend/app/**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node.js dependencies
+node_modules/
+whatsapp-bridge/node_modules/
+npm-debug.log*
+yarn-debug.log*
+
+# WhatsApp Session Data & Auth
+whatsapp-bridge/sessions/*
+!whatsapp-bridge/sessions/.gitkeep
+whatsapp-bridge/.wwebjs_cache/
+whatsapp-bridge/.wwebjs_auth/
+
+# Database Files
+*.db
+*.sqlite3
+backend/*.db
+whatsapp_saas.db
+
+# User Uploaded Media
+backend/uploads/*
+!backend/uploads/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
+# Environment Files
+.env
+.env.local
+backend/.env
+backend/.env.local
+whatsapp-bridge/.env
+
+# Log files
+*.log
+logs/
+bridge.log
+bridge-err.log
+
+# Operating System Files
+.DS_Store
+Thumbs.db
