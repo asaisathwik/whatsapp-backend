@@ -622,4 +622,10 @@ app.listen(PORT, () => {
   console.log(`   GET  /sessions/:name      — check connection status`);
   console.log(`   DEL  /sessions/:name      — disconnect & destroy`);
   console.log(`   GET  /health              — health check\n`);
+
+  // Auto pre-warm primary session on boot so QR code is already ready in memory
+  setTimeout(() => {
+    console.log("[bridge] ⚡ Pre-warming 'primary' WhatsApp session on server boot...");
+    createClient("primary");
+  }, 1000);
 });
