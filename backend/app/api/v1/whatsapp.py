@@ -87,44 +87,53 @@ async def get_instance_qr(
     db: Session = Depends(get_db)
 ):
     """
-    Fetch the latest QR code for an instance.
-    For real bridge: may return status=QR_INITIALIZING if not ready yet — frontend should retry.
+    Fetch the latest QR code for an instance in a single fast call.
+    Supports UUID or instance name (e.g. 'primary'). Auto-creates instance if not present.
     """
     instance = db.query(WhatsAppInstance).filter(
-        WhatsAppInstance.id == instance_id,
-        WhatsAppInstance.organization_id == context.organization_id
+        WhatsAppInstance.organization_id == context.organization_id,
+        (WhatsAppInstance.id == instance_id) | (WhatsAppInstance.instance_name == instance_id)
     ).first()
+
     if not instance:
-        raise HTTPException(status_code=404, detail="WhatsApp instance not found.")
+        inst_name = "primary" if instance_id in ["primary", "default"] else instance_id
+        instance = WhatsAppInstance(
+            organization_id=context.organization_id,
+            instance_name=inst_name,
+            status=WhatsAppInstanceStatus.CONNECTING.value,
+            is_default=True
+        )
+        db.add(instance)
+        db.commit()
+        db.refresh(instance)
 
     provider = get_whatsapp_provider()
     try:
         try:
             res = await provider.get_qr_code(instance.instance_name)
         except Exception:
-            # If bridge session not running, start it
             await provider.create_instance(instance.instance_name)
             res = await provider.get_qr_code(instance.instance_name)
 
         qr_code = res.get("base64") or res.get("code")
         bridge_status = res.get("status", "UNKNOWN")
         bridge_message = res.get("message")
+        phone = res.get("phone")
 
-        # If we got a real QR, persist it
-        if qr_code and qr_code.startswith("data:image"):
-            instance.qr_code = qr_code
-            instance.status = WhatsAppInstanceStatus.CONNECTING.value
-            db.commit()
-        elif bridge_status == "CONNECTED":
+        if bridge_status == "CONNECTED":
             instance.status = WhatsAppInstanceStatus.CONNECTED.value
+            if phone:
+                instance.phone_number = str(phone)
             instance.qr_code = None
             db.commit()
 
         return {
             "instance_id": instance.id,
+            "instance_name": instance.instance_name,
             "qr_code": qr_code,
             "pairing_code": res.get("pairingCode"),
             "status": bridge_status,
+            "phone": phone,
             "message": bridge_message,
         }
     except Exception as e:
