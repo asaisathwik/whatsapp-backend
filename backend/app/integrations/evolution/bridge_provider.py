@@ -1,22 +1,25 @@
 """
 Real WhatsApp Bridge Provider
-Communicates with the local whatsapp-bridge Node.js server (port 8001)
-which uses whatsapp-web.js to generate genuine scannable QR codes.
+Communicates with the Node.js whatsapp-bridge server (using EVOLUTION_API_URL)
+which uses whatsapp-web.js to generate genuine scannable QR codes and handle live messaging.
 """
 import httpx
 from typing import Dict, Any, Optional
 from app.integrations.evolution.provider import WhatsAppProvider
-
-BRIDGE_URL = "http://127.0.0.1:8001"
+from app.core.config import settings
 
 
 class WhatsAppBridgeProvider(WhatsAppProvider):
-    """Provider that talks to the local whatsapp-bridge server for real QR codes."""
+    """Provider that talks to the whatsapp-bridge server for real QR codes and messages."""
+
+    def __init__(self, base_url: Optional[str] = None):
+        url = base_url or settings.EVOLUTION_API_URL or "http://127.0.0.1:8001"
+        self.base_url = url.rstrip("/")
 
     async def _get(self, path: str) -> Dict[str, Any]:
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
-                resp = await client.get(f"{BRIDGE_URL}{path}")
+                resp = await client.get(f"{self.base_url}{path}")
                 return resp.json()
         except Exception as e:
             return {"status": "INITIALIZING", "error": str(e)}
@@ -24,7 +27,7 @@ class WhatsAppBridgeProvider(WhatsAppProvider):
     async def _post(self, path: str, data: Optional[Dict] = None) -> Dict[str, Any]:
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                resp = await client.post(f"{BRIDGE_URL}{path}", json=data or {})
+                resp = await client.post(f"{self.base_url}{path}", json=data or {})
                 if resp.status_code >= 400:
                     err_msg = resp.text
                     try:
@@ -40,7 +43,7 @@ class WhatsAppBridgeProvider(WhatsAppProvider):
     async def _delete(self, path: str) -> Dict[str, Any]:
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
-                resp = await client.delete(f"{BRIDGE_URL}{path}")
+                resp = await client.delete(f"{self.base_url}{path}")
                 return resp.json()
         except Exception as e:
             return {"status": "ERROR", "error": str(e)}
