@@ -25,13 +25,15 @@ const sessions = {};
 // Clean stale Chromium locks that cause Puppeteer to stall on Windows
 function cleanSessionLocks(instanceName) {
   try {
-    // Kill any orphaned chrome processes matching this session
-    try {
-      execSync(
-        `powershell -Command "Get-CimInstance Win32_Process -Filter \\"name = 'chrome.exe'\\" | Where-Object { $_.CommandLine -like '*session-${instanceName}*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`,
-        { stdio: "ignore", timeout: 3000 }
-      );
-    } catch {}
+    // Kill any orphaned chrome processes matching this session on Windows
+    if (process.platform === "win32") {
+      try {
+        execSync(
+          `powershell -Command "Get-CimInstance Win32_Process -Filter \\"name = 'chrome.exe'\\" | Where-Object { $_.CommandLine -like '*session-${instanceName}*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`,
+          { stdio: "ignore", timeout: 3000 }
+        );
+      } catch {}
+    }
 
     const sessionDir = path.join(__dirname, "sessions", `session-${instanceName}`);
     if (fs.existsSync(sessionDir)) {
@@ -127,6 +129,7 @@ function createClient(instanceName, existingSession) {
       }),
       puppeteer: {
         headless: true,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
         handleSIGINT: false,
         handleSIGTERM: false,
         handleSIGHUP: false,
